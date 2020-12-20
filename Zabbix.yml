@@ -1,0 +1,44 @@
+#-----------------------------------------------------
+# Zabbix-Agent Automatic introduction
+#-----------------------------------------------------
+- hosts: all
+  become: yes
+  tasks:
+
+#upgrade all packages
+- name: upgrade all packages
+  yum: name=*
+  state: latest
+
+#Zabbix-Agent install Repository
+- name: install Zabbix-Agent
+  yum: http://repo.zabbix.com/zabbix/5.0/rhel/8/x86_64/zabbix-agent-5.0.0-1.el8.x86_64.rpmhttp://repo.zabbix.com/zabbix/5.0/rhel/8/x86_64/zabbix-agent-5.0.0-1.el8.x86_64.rpm
+  state: present
+
+#yum Zabbix-Agent install
+- name: Zabbix-Agent install
+  yum: zabbix-agent
+  state: present
+
+#Config Copy
+- name: copy zabbix_agentd.conf
+  copy:
+    src: /etc/zabbix/zabbix_agentd.conf
+    dest: /etc/zabbix/conf.d/zabbix_agentd.conf
+
+#Zabbix-Agent Config
+- name: zabbix_agentd.conf Edit
+  lineinfile:
+    dest: /etc/zabbix/zabbix_agentd.conf
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+    with_items:
+        - { regexp: '^Listen 80$', line: 'Listen 8080' }
+        - { regexp: '^DocumentRoot "/var/www/html"', line: 'DocumentRoot "/web/public"' }
+
+#systemd zabbix-agent enabled
+- name: start zabbix-agent
+  systemd:
+    name: zabbix-agent
+    state: started
+    enabled: yes
